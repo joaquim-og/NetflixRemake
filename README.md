@@ -1,2 +1,2 @@
 # NetflixRemake
-Remake do app Netflix, para aprendizado de conceitos e construções de linguagem android native
+Netflix's app remake. For learning concepts and functions of Android native apps
