@@ -13,7 +13,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:src="@drawable/movie"
+        android:src="@drawable/placheholder_bg"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginStart="4dp"
         android:layout_marginEnd="4dp"
