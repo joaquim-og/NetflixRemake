@@ -16,7 +16,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         android:background="@android:color/black"
-        tools:listitem="@layout/movie_item"/>
+        tools:listitem="@layout/category_item"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
