@@ -6,6 +6,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -17,17 +19,22 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.joaquim.replicanetflix.model.Movie;
+import com.joaquim.replicanetflix.model.MovieDetail;
+import com.joaquim.replicanetflix.util.ImageDownloaderTask;
+import com.joaquim.replicanetflix.util.MovieDetailTask;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class MovieActivity extends AppCompatActivity {
+public class MovieActivity extends AppCompatActivity implements MovieDetailTask.MovieDetailLoader {
 
     private TextView txtTitle;
     private TextView txtDesc;
     private TextView txtCast;
     private RecyclerView recyclerView;
+    private MovieAdapter movieAdapter;
+    private ImageView imgCover;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +46,7 @@ public class MovieActivity extends AppCompatActivity {
         txtDesc = findViewById(R.id.text_view_desc);
         txtCast = findViewById(R.id.text_view_cast);
         recyclerView = findViewById(R.id.recycler_view_similar);
+        imgCover = findViewById(R.id.image_view_cover);
 
 
         Toolbar toolBar = findViewById(R.id.toolbar);
@@ -57,22 +65,46 @@ public class MovieActivity extends AppCompatActivity {
 
             Drawable movieCover = ContextCompat.getDrawable(this, R.drawable.movie_4);
             drawable.setDrawableByLayerId(R.id.cover_drawable, movieCover);
-            ((ImageView) findViewById(R.id.image_view_cover)).setImageDrawable(drawable);
+//            ((ImageView) findViewById(R.id.image_view_cover)).setImageDrawable(drawable);
 
         }
-
-        txtTitle.setText("Batman Begins");
-        txtDesc.setText("Mussum Ipsum, cacilds vidis litro abertis. Casamentiss faiz malandris se pirulitá. Nec orci ornare consequat. Praesent lacinia ultrices consectetur. Sed non ipsum felis. Cevadis im ampola pa arma uma pindureta. Aenean aliquam molestie leo, vitae iaculis nisl.");
-        txtCast.setText(getString(R.string.cast, "Pessoa A" + "Pessoa A" + "Pessoa A" + "Pessoa A" + "Pessoa A" + "Pessoa A" + "Pessoa A" + "Pessoa A" + "Pessoa A" + "Pessoa A"));
 
         List<Movie> movies = new ArrayList<>();
-        for (int i = 0; i < 30; i++) {
-            Movie movie = new Movie();
-            movies.add(movie);
+        movieAdapter = new MovieAdapter(movies);
+        recyclerView.setAdapter(movieAdapter);
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
+
+        Bundle extras =  getIntent().getExtras();
+        if (extras != null) {
+            int id = extras.getInt("id");
+            MovieDetailTask movieDetailTask = new MovieDetailTask(this);
+            movieDetailTask.setMovieDetailLoader(this);
+            movieDetailTask.execute("https://tiagoaguiar.co/api/netflix/" + id);
+
         }
 
-        recyclerView.setAdapter(new MovieAdapter(movies));
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == android.R.id.home)
+            finish();
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onResult(MovieDetail movieDetail) {
+        txtTitle.setText(movieDetail.getMovie().getTitle());
+        txtDesc.setText(movieDetail.getMovie().getDesc());
+        txtCast.setText(movieDetail.getMovie().getCast());
+
+        ImageDownloaderTask imageDownloaderTask = new ImageDownloaderTask(imgCover);
+        imageDownloaderTask.setShadowEnable(true);
+        imageDownloaderTask.execute(movieDetail.getMovie().getCoverUrl());
+
+        movieAdapter.setMovies(movieDetail.getMoviesSimiliar());
+        movieAdapter.notifyDataSetChanged();
 
     }
 
@@ -90,10 +122,15 @@ public class MovieActivity extends AppCompatActivity {
     //Movie adapter for its data
     private class MovieAdapter extends RecyclerView.Adapter<MovieHolder> {
 
-        private final List<Movie> movies;
+        private List<Movie> movies;
 
         private MovieAdapter(List<Movie> movies) {
             this.movies = movies;
+        }
+
+        public void setMovies(List<Movie> movies) {
+            this.movies.clear();
+            this.movies.addAll(movies);
         }
 
         @NonNull
@@ -106,7 +143,7 @@ public class MovieActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(@NonNull MovieHolder holder, int position) {
             Movie movie = movies.get(position);
-//            holder.imageViewCover.setImageResource(movie.getCoverUrl());
+            new ImageDownloaderTask(holder.imageViewCover).execute(movie.getCoverUrl());
         }
 
         @Override
