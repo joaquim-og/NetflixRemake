@@ -3,9 +3,14 @@ package com.joaquim.replicanetflix.util;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.AsyncTask;
 import android.widget.ImageView;
 
+import androidx.core.content.ContextCompat;
+
+import com.joaquim.replicanetflix.R;
 import com.joaquim.replicanetflix.model.Category;
 
 import org.json.JSONException;
@@ -24,6 +29,11 @@ import javax.net.ssl.HttpsURLConnection;
 public class ImageDownloaderTask extends AsyncTask<String, Void, Bitmap> {
 
     private final WeakReference<ImageView> imageViewWeakReference;
+    private boolean shadowEnable;
+
+    public void setShadowEnable(boolean shadowEnable) {
+        this.shadowEnable = shadowEnable;
+    }
 
     public ImageDownloaderTask(ImageView imageView) {
         this.imageViewWeakReference = new WeakReference<>(imageView);
@@ -50,7 +60,7 @@ public class ImageDownloaderTask extends AsyncTask<String, Void, Bitmap> {
 
             //manipulating server response. If no 200, error
             if (responseCode != 200) {
-               return null;
+                return null;
             }
 
             //if server ok, read and manipulate all data
@@ -81,16 +91,28 @@ public class ImageDownloaderTask extends AsyncTask<String, Void, Bitmap> {
         ImageView imageView = imageViewWeakReference.get();
         if (imageView != null && bitmap != null) {
 
-            if (bitmap.getWidth() < imageView.getWidth() || bitmap.getHeight() < imageView.getHeight()) {
-                Matrix matrix = new Matrix();
+            if (shadowEnable) {
+                LayerDrawable drawable = (LayerDrawable) ContextCompat.getDrawable(imageView.getContext(),
+                        R.drawable.shadows);
+                if (drawable !=null) {
+                    BitmapDrawable bitmapDrawable = new BitmapDrawable(bitmap);
+                    drawable.setDrawableByLayerId(R.id.cover_drawable, bitmapDrawable);
+                    imageView.setImageDrawable(drawable);
+                }
+            } else {
 
-                matrix.postScale((float) imageView.getWidth() / (float) bitmap.getWidth(),
-                        (float) imageView.getHeight() / (float) bitmap.getHeight());
+                if (bitmap.getWidth() < imageView.getWidth() || bitmap.getHeight() < imageView.getHeight()) {
+                    Matrix matrix = new Matrix();
 
-                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
+                    matrix.postScale((float) imageView.getWidth() / (float) bitmap.getWidth(),
+                            (float) imageView.getHeight() / (float) bitmap.getHeight());
+
+                    bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
+                }
+
+                imageView.setImageBitmap(bitmap);
             }
 
-            imageView.setImageBitmap(bitmap);
         }
     }
 }
