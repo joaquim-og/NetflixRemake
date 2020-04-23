@@ -14,6 +14,7 @@ import android.widget.TextView;
 import com.joaquim.replicanetflix.model.Category;
 import com.joaquim.replicanetflix.model.Movie;
 import com.joaquim.replicanetflix.util.CategoryTask;
+import com.joaquim.replicanetflix.util.ImageDownloaderTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -129,7 +130,7 @@ public class MainActivity extends AppCompatActivity implements CategoryTask.Cate
         @Override
         public void onBindViewHolder(@NonNull MovieHolder holder, int position) {
             Movie movie = movies.get(position);
-//            holder.imageViewCover.setImageResource(movie.getCoverUrl());
+            new ImageDownloaderTask(holder.imageViewCover).execute(movie.getCoverUrl());
         }
 
         @Override
