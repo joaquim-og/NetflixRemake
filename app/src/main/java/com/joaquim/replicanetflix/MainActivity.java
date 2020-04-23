@@ -13,11 +13,12 @@ import android.widget.TextView;
 
 import com.joaquim.replicanetflix.model.Category;
 import com.joaquim.replicanetflix.model.Movie;
+import com.joaquim.replicanetflix.util.CategoryTask;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements CategoryTask.CategoryLoader {
 
     private MainAdapter mainAdapter;
 
@@ -28,31 +29,25 @@ public class MainActivity extends AppCompatActivity {
 
         RecyclerView recyclerview = findViewById(R.id.recycler_view_main);
 
-        //generating fake data
         ArrayList<Category> categories = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            Category category = new Category();
-
-            category.setName("cat " + i);
-
-            List<Movie> movies = new ArrayList<>();
-            for (int j = 0; j < 30; j++) {
-                Movie movie = new Movie();
-//                movie.setCoverUrl(R.drawable.movie);
-                movies.add(movie);
-            }
-
-            category.setMovies(movies);
-            categories.add(category);
-
-        }
 
         //setting adapter and layout
         mainAdapter = new MainAdapter(categories);
         recyclerview.setLayoutManager(new LinearLayoutManager(this, RecyclerView.VERTICAL, false));
         recyclerview.setAdapter(mainAdapter);
 
+        CategoryTask categoryTask = new CategoryTask(this);
+        categoryTask.setCategoryLoader(this);
+        categoryTask.execute("https://tiagoaguiar.co/api/netflix/home");
+
     }
+
+    @Override
+    public void onResult(List<Category> categories) {
+        mainAdapter.setCategories(categories);
+        mainAdapter.notifyDataSetChanged();
+    }
+
 
     //setting Holders
     private static class MovieHolder extends RecyclerView.ViewHolder {
@@ -80,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
     //Category adapter for its data
     private class MainAdapter extends RecyclerView.Adapter<CategoryHolder> {
 
-        private final List<Category> categories;
+        private List<Category> categories;
 
         private MainAdapter(List<Category> categories) {
             this.categories = categories;
@@ -107,6 +102,11 @@ public class MainActivity extends AppCompatActivity {
         public int getItemCount() {
 
             return categories.size();
+        }
+
+        public void setCategories(List<Category> categories) {
+            this.categories.clear();
+            this.categories.addAll(categories);
         }
     }
 

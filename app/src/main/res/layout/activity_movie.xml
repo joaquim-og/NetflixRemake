@@ -35,15 +35,15 @@
 
         <ImageView
             android:id="@+id/ic_play"
-            android:layout_width="96dp"
-            android:layout_height="96dp"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             app:layout_constraintBottom_toBottomOf="@+id/image_view_cover"
             app:layout_constraintEnd_toEndOf="@+id/image_view_cover"
             app:layout_constraintStart_toStartOf="@+id/image_view_cover"
             app:layout_constraintTop_toTopOf="@+id/image_view_cover"
-            app:srcCompat="@drawable/ic_play" />
+            app:srcCompat="@drawable/play_button" />
 
         <TextView
             android:id="@+id/text_view_title"
