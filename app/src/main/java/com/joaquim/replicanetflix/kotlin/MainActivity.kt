@@ -10,13 +10,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.joaquim.replicanetflix.R
+import com.joaquim.replicanetflix.model.Categories
 import com.joaquim.replicanetflix.model.Category
 import com.joaquim.replicanetflix.model.Movie
-import com.joaquim.replicanetflix.util.CategoryTask
-import com.joaquim.replicanetflix.util.ImageDownloaderTask
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.category_item.view.*
 import kotlinx.android.synthetic.main.movie_item.view.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,14 +33,24 @@ class MainActivity : AppCompatActivity() {
         recycler_view_main.adapter = mainAdapter
         recycler_view_main.layoutManager = LinearLayoutManager(this)
 
-        val categoryTask = CategoryTask(this)
-        categoryTask.setCategoryLoader {
-            mainAdapter.categories.clear()
-            mainAdapter.categories.addAll(it)
-            mainAdapter.notifyDataSetChanged()
-        }
+        retrofit().create(NetflixAPI::class.java)
+                .listCategories()
+                .enqueue(object : Callback<Categories> {
+                    override fun onFailure(call: Call<Categories>, t: Throwable) {
+                        Toast.makeText(this@MainActivity, t.message, Toast.LENGTH_SHORT).show()
+                    }
 
-        categoryTask.execute("https://tiagoaguiar.co/api/netflix/home")
+                    override fun onResponse(call: Call<Categories>, response: Response<Categories>) {
+                        if (response.isSuccessful) {
+                            response.body()?.let {
+                                mainAdapter.categories.clear()
+                                mainAdapter.categories.addAll(it.categories)
+                                mainAdapter.notifyDataSetChanged()
+                            }
+                        }
+                    }
+
+                })
     }
 
     private inner class MainAdapter(val categories: MutableList<Category>) : RecyclerView.Adapter<CategoryHolder>() {
@@ -90,7 +102,7 @@ class MainActivity : AppCompatActivity() {
     private inner class CategoryHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         fun bind(category: Category) = with(itemView) {
             text_view_title.text = category.name
-            recycler_view_movie.adapter = MovieAdapter(category.movies) { movie ->
+            recycler_view_movie.adapter = MovieAdapter(category.movies as MutableList<Movie>) { movie ->
                 if (movie.id > 3) {
                     Toast.makeText(this@MainActivity, "não foi implementada essa funcionalidade", Toast.LENGTH_LONG).show()
                 } else {

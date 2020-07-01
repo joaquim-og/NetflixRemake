@@ -3,10 +3,10 @@ package com.joaquim.replicanetflix.kotlin
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
@@ -18,11 +18,13 @@ import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.DrawableImageViewTarget
 import com.bumptech.glide.request.target.Target
 import com.joaquim.replicanetflix.R
-import com.joaquim.replicanetflix.model.Movie
-import com.joaquim.replicanetflix.util.ImageDownloaderTask
-import com.joaquim.replicanetflix.util.MovieDetailTask
+import com.joaquim.replicanetflix.model.*
 import kotlinx.android.synthetic.main.activity_movie.*
 import kotlinx.android.synthetic.main.movie_item.view.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.create
 
 class MovieActivity : AppCompatActivity() {
 
@@ -34,36 +36,47 @@ class MovieActivity : AppCompatActivity() {
 
         intent.extras?.let {
             val id = it.getInt("id")
-            val task = MovieDetailTask(this)
-            task.setMovieDetailLoader {movieDetail ->
-                text_view_title.text = movieDetail.movie.title
-                text_view_desc.text = movieDetail.movie.desc
-                text_view_cast.text = getString(R.string.cast ,movieDetail.movie.cast)
 
-                Glide.with(this)
-                        .load(movieDetail.movie.coverUrl)
-                        .listener(object : RequestListener<Drawable> {
-                            override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
-                                return true
-                            }
+            retrofit().create(NetflixAPI::class.java)
+                    .getMovieBy(id)
+                    .enqueue(object : Callback<MovieDetail> {
+                        override fun onFailure(call: Call<MovieDetail>, t: Throwable) {
+                            Toast.makeText(this@MovieActivity, t.message, Toast.LENGTH_SHORT).show()
+                        }
 
-                            override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
-                                val drawable: LayerDrawable? = ContextCompat.getDrawable(baseContext, R.drawable.shadows) as LayerDrawable?
-                                drawable?.let {
-                                    drawable.setDrawableByLayerId(R.id.cover_drawable, resource)
-                                    (target as DrawableImageViewTarget).view.setImageDrawable(drawable)
+                        override fun onResponse(call: Call<MovieDetail>, response: Response<MovieDetail>) {
+                            if (response.isSuccessful) {
+                                response.body()?.let {movieDetail ->
+                                    text_view_title.text = movieDetail.title
+                                    text_view_desc.text = movieDetail.desc
+                                    text_view_cast.text = getString(R.string.cast ,movieDetail.cast)
+
+                                    Glide.with(this@MovieActivity)
+                                            .load(movieDetail.coverUrl)
+                                            .listener(object : RequestListener<Drawable> {
+                                                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
+                                                    return true
+                                                }
+
+                                                override fun onResourceReady(resource: Drawable?, model: Any?, target: Target<Drawable>?, dataSource: DataSource?, isFirstResource: Boolean): Boolean {
+                                                    val drawable: LayerDrawable? = ContextCompat.getDrawable(baseContext, R.drawable.shadows) as LayerDrawable?
+                                                    drawable?.let {
+                                                        drawable.setDrawableByLayerId(R.id.cover_drawable, resource)
+                                                        (target as DrawableImageViewTarget).view.setImageDrawable(drawable)
+                                                    }
+                                                    return true
+                                                }
+
+                                            }).into(image_view_cover)
+
+                                    movieAdapter.movies.clear()
+                                    movieAdapter.movies.addAll(movieDetail.moviesSimilar)
+                                    movieAdapter.notifyDataSetChanged()
                                 }
-                                return true
                             }
+                        }
 
-                        }).into(image_view_cover)
-                
-                movieAdapter.movies.clear()
-                movieAdapter.movies.addAll(movieDetail.moviesSimiliar)
-                movieAdapter.notifyDataSetChanged()
-
-            }
-            task.execute("https://tiagoaguiar.co/api/netflix/$id")
+                    })
 
             setSupportActionBar(toolbar)
             supportActionBar?.let { toolbar ->
